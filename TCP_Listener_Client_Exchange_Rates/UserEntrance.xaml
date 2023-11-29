@@ -1,0 +1,18 @@
+﻿<Window x:Class="TCP_Listener_Client_Exchange_Rates.UserEntrance"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TCP_Listener_Client_Exchange_Rates"
+        mc:Ignorable="d"
+        Title="User Entrance" Height="190" Width="285">
+    <Grid>
+        <StackPanel Margin="10">
+            <TextBlock>Nickname:</TextBlock>
+            <TextBox Name="Nickname" Margin="0,5,0,5"></TextBox>
+            <TextBlock>Password:</TextBlock>
+            <TextBox Name="Password" Margin="0,5,0,5"></TextBox>
+            <Button Command="{Binding GetEnter}" Name="Enter" Margin="0,5,0,5" Width="200">Enter</Button>
+        </StackPanel>
+    </Grid>
+</Window>

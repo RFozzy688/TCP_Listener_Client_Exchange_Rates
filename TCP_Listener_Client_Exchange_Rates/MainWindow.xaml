@@ -23,11 +23,11 @@
 
                 <StackPanel Orientation="Horizontal" Grid.Column="0">
                     <TextBlock VerticalAlignment="Center" Margin="3">Client:</TextBlock>
-                    <TextBlock Name="Nickname" VerticalAlignment="Center" Margin="3"></TextBlock>
+                    <TextBlock Name="UserName" VerticalAlignment="Center" Margin="3"></TextBlock>
                 </StackPanel>
 
                 <StackPanel VerticalAlignment="Center" Grid.Column="1">
-                    <Button Name="LogIn" Margin="5">Log in</Button>
+                    <Button Command="{Binding GetLogin}" Name="LogIn" Margin="5">Log in</Button>
                     <Button Name="LogOut" Margin="5" IsEnabled="False" >Log out</Button>
                 </StackPanel>
             </Grid>
@@ -36,7 +36,7 @@
         <GroupBox Header="Currency selection" Grid.Row="1" Margin="5">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" Orientation="Horizontal">
                 <ComboBox Name="Currency" Width="100" Margin="0,0,50,0"></ComboBox>
-                <Button Name="Send" Width="100" IsEnabled="False">Send</Button>
+                <Button Command="{Binding GetSend}" Name="Send" Width="100" IsEnabled="True">Send</Button>
             </StackPanel>
         </GroupBox>
 
