@@ -5,8 +5,46 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TCP_Listener_Client_Exchange_Rates"
         mc:Ignorable="d"
-        Title="Exchange Rates" Height="247" Width="341">
-    <Grid>
+        Title="Exchange Rates" Height="300" Width="410">
 
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        
+        <GroupBox Header="Loggin" Grid.Row="0" Margin="5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" Grid.Column="0">
+                    <TextBlock VerticalAlignment="Center" Margin="3">Client:</TextBlock>
+                    <TextBlock Name="Nickname" VerticalAlignment="Center" Margin="3"></TextBlock>
+                </StackPanel>
+
+                <StackPanel VerticalAlignment="Center" Grid.Column="1">
+                    <Button Name="LogIn" Margin="5">Log in</Button>
+                    <Button Name="LogOut" Margin="5" IsEnabled="False" >Log out</Button>
+                </StackPanel>
+            </Grid>
+        </GroupBox>
+
+        <GroupBox Header="Currency selection" Grid.Row="1" Margin="5">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" Orientation="Horizontal">
+                <ComboBox Name="Currency" Width="100" Margin="0,0,50,0"></ComboBox>
+                <Button Name="Send" Width="100" IsEnabled="False">Send</Button>
+            </StackPanel>
+        </GroupBox>
+
+        <GroupBox Header="Result" Grid.Row="2" Margin="5">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" Orientation="Horizontal">
+                <TextBlock Margin="0,0,10,0">Result:</TextBlock>
+                <TextBlock Name="Result"></TextBlock>
+            </StackPanel>
+        </GroupBox>
     </Grid>
 </Window>
