@@ -35,7 +35,16 @@
 
         <GroupBox Header="Currency selection" Grid.Row="1" Margin="5">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" Orientation="Horizontal">
-                <ComboBox Name="Currency" Width="100" Margin="0,0,50,0"></ComboBox>
+                <ComboBox Name="Currency" Width="100" Margin="0,0,50,0">
+                    <ComboBoxItem IsSelected="True">USD/EUR</ComboBoxItem>
+                    <ComboBoxItem>EUR/USD</ComboBoxItem>
+                    <ComboBoxItem>USD/UAH</ComboBoxItem>
+                    <ComboBoxItem>UAH/USD</ComboBoxItem>
+                    <ComboBoxItem>EUR/UAH</ComboBoxItem>
+                    <ComboBoxItem>UAH/EUR</ComboBoxItem>
+                    <ComboBoxItem>USD/PLN</ComboBoxItem>
+                    <ComboBoxItem>PLN/USD</ComboBoxItem>
+                </ComboBox>
                 <Button Command="{Binding GetSend}" Name="Send" Width="100" IsEnabled="True">Send</Button>
             </StackPanel>
         </GroupBox>

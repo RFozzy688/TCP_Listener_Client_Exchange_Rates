@@ -11,7 +11,7 @@ namespace Server_TcpListener
 
             try
             {
-                listener.Start();
+                listener.Start(2);
                 Console.WriteLine("Server run. Wait for connection...");
 
                 while (true)

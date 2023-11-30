@@ -26,7 +26,7 @@ namespace TCP_Listener_Client_Exchange_Rates
             _getLogin = new Commands(CreateWndUserEntrance);
             _getSend = new Commands(Send);
 
-            ConnectToServer();
+            //ConnectToServer();
         }
         public Commands GetLogin { get { return _getLogin; } }
         public Commands GetSend { get { return _getSend; } }
