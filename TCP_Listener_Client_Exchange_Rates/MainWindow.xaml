@@ -44,6 +44,7 @@
                     <ComboBoxItem>UAH/EUR</ComboBoxItem>
                     <ComboBoxItem>USD/PLN</ComboBoxItem>
                     <ComboBoxItem>PLN/USD</ComboBoxItem>
+                    <ComboBoxItem>END</ComboBoxItem>
                 </ComboBox>
                 <Button Command="{Binding GetSend}" Name="Send" Width="100" IsEnabled="True">Send</Button>
             </StackPanel>

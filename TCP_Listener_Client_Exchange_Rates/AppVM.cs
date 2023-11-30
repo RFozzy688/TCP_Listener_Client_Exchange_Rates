@@ -13,9 +13,11 @@ namespace TCP_Listener_Client_Exchange_Rates
     {
         MainWindow _viewMainWnd;
         User _user;
+        TcpClient _tcpClient;
         NetworkStream _stream;
         Commands _getLogin;
         Commands _getSend;
+        Commands _getCurrency;
 
         public AppVM(MainWindow view) 
         {
@@ -26,18 +28,25 @@ namespace TCP_Listener_Client_Exchange_Rates
             _getLogin = new Commands(CreateWndUserEntrance);
             _getSend = new Commands(Send);
 
-            //ConnectToServer();
+            ConnectToServer();
         }
         public Commands GetLogin { get { return _getLogin; } }
         public Commands GetSend { get { return _getSend; } }
+        public Commands GetCurrency { get { return _getCurrency; } }
         private void CreateWndUserEntrance(object param)
         {
             UserEntrance userEntrance = new UserEntrance(this, _user);
             userEntrance.Show();
         }
-        private void Send(object param)
+        private async void Send(object param)
         {
-            //MessageBox.Show(_user.Nickname + " " + _user.Password);
+            byte[] data = Encoding.UTF8.GetBytes(_viewMainWnd.Currency.SelectionBoxItem.ToString());
+            await _stream.WriteAsync(data);
+
+            byte[] response = new byte[256];
+            await _stream.ReadAsync(response);
+
+            _viewMainWnd.Result.Text = Encoding.UTF8.GetString(response);
         }
         public void CheckingUser()
         {
@@ -47,9 +56,9 @@ namespace TCP_Listener_Client_Exchange_Rates
         {
             try
             {
-                using TcpClient tcpClient = new TcpClient();
-                await tcpClient.ConnectAsync("127.0.0.1", 8080);
-                _stream = tcpClient.GetStream();
+                _tcpClient = new TcpClient();
+                await _tcpClient.ConnectAsync("127.0.0.1", 8080);
+                _stream = _tcpClient.GetStream();
             }
             catch (SocketException ex)
             {
