@@ -21,11 +21,18 @@ namespace TCP_Listener_Client_Exchange_Rates
     /// </summary>
     public partial class MainWindow : Window
     {
+        AppVM _appVM;
         public MainWindow()
         {
             InitializeComponent();
 
-            DataContext = new AppVM(this);
+            _appVM = new AppVM(this);
+            DataContext = _appVM;
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            _appVM.GetWorkWithServer.UserLogout();
         }
     }
 }

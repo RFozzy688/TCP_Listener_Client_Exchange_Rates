@@ -1,16 +1,35 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 
 namespace Server_TcpListener
 {
+    public class User : IComparable
+    {
+        public string Nickname { get; set; }
+        public string Password { get; set; }
+        public int CompareTo(object obj)
+        {
+            if (Nickname.CompareTo((obj as User).Nickname) == 0 && Password.CompareTo((obj as User).Password) == 0)
+            {
+                return 0;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+    }
     internal class Program
     {
         Dictionary<string, double> _exchangeRates;
+        List<User>? _users;
 
         public Program()
         {
             _exchangeRates = new Dictionary<string, double>();
+            _users = new List<User>();
 
             _exchangeRates.Add("USD/EUR", 0.91);
             _exchangeRates.Add("EUR/USD", 1.08);
@@ -25,7 +44,15 @@ namespace Server_TcpListener
         {
             Program program = new Program();
 
+            program.LoadingDataUsers();
             await program.StartServer();
+        }
+        void LoadingDataUsers()
+        {
+            using (FileStream fs = new FileStream(@"..\..\..\users.json", FileMode.Open))
+            {
+                _users = JsonSerializer.Deserialize<List<User>>(fs);
+            }
         }
         async Task StartServer()
         {
@@ -36,13 +63,17 @@ namespace Server_TcpListener
                 listener.Start();
                 Console.WriteLine("Server run. Wait for connection...");
 
-                //while (true)
-                //{
+                while (true)
+                {
                     TcpClient tcpClient = await listener.AcceptTcpClientAsync();
-                    Console.WriteLine(tcpClient.Client.RemoteEndPoint?.ToString());
 
-                    await Task.Run(async () => await ProcessClientAsync(tcpClient));
-                //}
+                    if (await UserAuthorizationRequest(tcpClient))
+                    {
+                        Console.WriteLine(tcpClient.Client.RemoteEndPoint?.ToString());
+
+                        await Task.Run(async () => await ProcessClientAsync(tcpClient));
+                    }
+                }
             }
             catch (SocketException ex)
             {
@@ -57,21 +88,74 @@ namespace Server_TcpListener
 
             while (true) 
             {
-                int countByte = await stream.ReadAsync(received);
-
-                if (countByte == 0) continue;
-
-                string str = Encoding.UTF8.GetString(received, 0, countByte);
-
-                if (str.Contains("END"))
+                try
                 {
-                    stream.Close();
+                    int countByte = await stream.ReadAsync(received);
+
+                    if (countByte == 0) continue;
+
+                    string str = Encoding.UTF8.GetString(received, 0, countByte);
+
+                    if (str.Contains("END"))
+                    {
+                        stream.Close();
+                        break;
+                    }
+
+                    string message = str + " " + _exchangeRates[str].ToString();
+                    byte[] dataBytes = Encoding.UTF8.GetBytes(message);
+                    await stream.WriteAsync(dataBytes);
+                }
+                catch (IOException ex)
+                {
+                    Console.WriteLine(ex.ToString());
                     break;
                 }
+            }
+        }
+        bool CheckingUser(User? user)
+        {
+            if (user == null) return false;
 
-                string message = str + " " + _exchangeRates[str].ToString();
-                byte[] dataBytes = Encoding.UTF8.GetBytes(message);
-                await stream.WriteAsync(dataBytes);
+            foreach (User item in _users)
+            {
+                if (item.CompareTo(user) == 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        async Task<bool> UserAuthorizationRequest(TcpClient tcpClient)
+        {
+            NetworkStream stream = tcpClient.GetStream();
+
+            byte[] received = new byte[256];
+            int countByte = await stream.ReadAsync(received);
+            string str = Encoding.UTF8.GetString(received, 0, countByte);
+
+            User? user = JsonSerializer.Deserialize<User>(str);
+
+            if (CheckingUser(user))
+            {
+                string msgAuthorization = "Authorization success";
+                byte[] dataByte = Encoding.UTF8.GetBytes(msgAuthorization);
+                await stream.WriteAsync(dataByte);
+
+                return true;
+            }
+            else
+            {
+                string msgError = "Error authorization!!!";
+                byte[] dataByte = Encoding.UTF8.GetBytes(msgError);
+                await stream.WriteAsync(dataByte);
+
+                tcpClient.Client.Shutdown(SocketShutdown.Both);
+                stream.Close();
+                tcpClient.Close();
+
+                return false;
             }
         }
     }

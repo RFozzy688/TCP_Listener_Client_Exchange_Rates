@@ -4,8 +4,10 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace TCP_Listener_Client_Exchange_Rates
 {
@@ -13,56 +15,65 @@ namespace TCP_Listener_Client_Exchange_Rates
     {
         MainWindow _viewMainWnd;
         User _user;
-        TcpClient _tcpClient;
-        NetworkStream _stream;
+        WorkWithServer _workWithServer;
         Commands _getLogin;
         Commands _getSend;
-        Commands _getCurrency;
+        Commands _getLogout;
 
         public AppVM(MainWindow view) 
         {
             _viewMainWnd = view;
 
             _user = new User();
+            _workWithServer = new WorkWithServer();
 
             _getLogin = new Commands(CreateWndUserEntrance);
             _getSend = new Commands(Send);
-
-            ConnectToServer();
+            _getLogout = new Commands(UserLogout);
         }
         public Commands GetLogin { get { return _getLogin; } }
         public Commands GetSend { get { return _getSend; } }
-        public Commands GetCurrency { get { return _getCurrency; } }
+        public Commands GetLogout { get { return _getLogout; } }
+        public WorkWithServer GetWorkWithServer {  get { return _workWithServer; } }
         private void CreateWndUserEntrance(object param)
         {
             UserEntrance userEntrance = new UserEntrance(this, _user);
             userEntrance.Show();
         }
+        private void UserLogout(object param)
+        {
+            _workWithServer.UserLogout();
+
+            _viewMainWnd.LogIn.IsEnabled = true;
+            _viewMainWnd.LogOut.IsEnabled = false;
+            _viewMainWnd.Send.IsEnabled = false;
+
+            _viewMainWnd.UserName.Text = string.Empty;
+            _viewMainWnd.Result.Text = string.Empty;
+        }
         private async void Send(object param)
         {
-            byte[] data = Encoding.UTF8.GetBytes(_viewMainWnd.Currency.SelectionBoxItem.ToString());
-            await _stream.WriteAsync(data);
-
-            byte[] response = new byte[256];
-            await _stream.ReadAsync(response);
-
-            _viewMainWnd.Result.Text = Encoding.UTF8.GetString(response);
+            _viewMainWnd.Result.Text = await _workWithServer.Send(_viewMainWnd.Currency.SelectionBoxItem.ToString());
         }
-        public void CheckingUser()
+        public async void AuthorizationUser()
         {
-            //MessageBox.Show(_user.Nickname + " " + _user.Password);
-        }
-        private async void ConnectToServer()
-        {
-            try
+            if (_user.Nickname == "" && _user.Password == "")
             {
-                _tcpClient = new TcpClient();
-                await _tcpClient.ConnectAsync("127.0.0.1", 8080);
-                _stream = _tcpClient.GetStream();
+                MessageBox.Show("Error authorization!!!");
+                return;
             }
-            catch (SocketException ex)
+
+            if (await _workWithServer.AuthorizationUser(_user))
             {
-                MessageBox.Show(ex.ToString());
+                _viewMainWnd.UserName.Text = _user.Nickname;
+
+                _viewMainWnd.LogIn.IsEnabled = false;
+                _viewMainWnd.LogOut.IsEnabled = true;
+                _viewMainWnd.Send.IsEnabled = true;
+            }
+            else
+            {
+                MessageBox.Show("Error authorization!!!");
             }
         }
     }

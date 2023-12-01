@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace TCP_Listener_Client_Exchange_Rates
@@ -28,7 +32,7 @@ namespace TCP_Listener_Client_Exchange_Rates
             _user.Password = _viewUserEntrance.Password.Text;
 
             _viewUserEntrance.Close();
-            _appVM.CheckingUser();
+            _appVM.AuthorizationUser();
         }
     }
 }
