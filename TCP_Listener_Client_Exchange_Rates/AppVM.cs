@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
@@ -19,6 +21,9 @@ namespace TCP_Listener_Client_Exchange_Rates
         Commands _getLogin;
         Commands _getSend;
         Commands _getLogout;
+
+        TcpClient? _tcpClient;
+        NetworkStream? _stream;
 
         public AppVM(MainWindow view) 
         {
@@ -55,7 +60,7 @@ namespace TCP_Listener_Client_Exchange_Rates
         {
             _viewMainWnd.Result.Text = await _workWithServer.Send(_viewMainWnd.Currency.SelectionBoxItem.ToString());
         }
-        public async void AuthorizationUser()
+        public void AuthorizationUser()
         {
             if (_user.Nickname == "" && _user.Password == "")
             {
@@ -63,18 +68,21 @@ namespace TCP_Listener_Client_Exchange_Rates
                 return;
             }
 
-            if (await _workWithServer.AuthorizationUser(_user))
+            _viewMainWnd.Dispatcher.Invoke(async () =>
             {
-                _viewMainWnd.UserName.Text = _user.Nickname;
+                if (await _workWithServer.AuthorizationUser(_user))
+                {
+                    _viewMainWnd.UserName.Text = _user.Nickname;
 
-                _viewMainWnd.LogIn.IsEnabled = false;
-                _viewMainWnd.LogOut.IsEnabled = true;
-                _viewMainWnd.Send.IsEnabled = true;
-            }
-            else
-            {
-                MessageBox.Show("Error authorization!!!");
-            }
+                    _viewMainWnd.LogIn.IsEnabled = false;
+                    _viewMainWnd.LogOut.IsEnabled = true;
+                    _viewMainWnd.Send.IsEnabled = true;
+                }
+                else
+                {
+                    MessageBox.Show("Error authorization!!!");
+                }
+            });
         }
     }
 }

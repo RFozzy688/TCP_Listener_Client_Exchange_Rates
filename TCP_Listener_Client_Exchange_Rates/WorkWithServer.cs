@@ -16,7 +16,7 @@ namespace TCP_Listener_Client_Exchange_Rates
         TcpClient? _tcpClient;
         NetworkStream? _stream;
 
-        private async Task ConnectToServer()
+        public async Task ConnectToServer()
         {
             try
             {

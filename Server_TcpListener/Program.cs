@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using System.Xml.Serialization;
 
 namespace Server_TcpListener
 {
@@ -21,15 +22,32 @@ namespace Server_TcpListener
             }
         }
     }
+    [Serializable]
+    public struct LogUserInfo
+    {
+        public string _nickname;
+        public DateTime _dateConnect;
+        public DateTime _dateDisconnect;
+        public List<string> _exchangeRates;
+        public LogUserInfo()
+        {
+            _nickname = string.Empty;
+            _dateConnect = DateTime.MinValue;
+            _dateDisconnect = DateTime.MinValue;
+            _exchangeRates = new List<string>();
+        }
+    }
     internal class Program
     {
         Dictionary<string, double> _exchangeRates;
         List<User>? _users;
+        Dictionary<TcpClient, LogUserInfo> _logs;
 
         public Program()
         {
             _exchangeRates = new Dictionary<string, double>();
             _users = new List<User>();
+            _logs = new Dictionary<TcpClient, LogUserInfo>();
 
             _exchangeRates.Add("USD/EUR", 0.91);
             _exchangeRates.Add("EUR/USD", 1.08);
@@ -69,9 +87,7 @@ namespace Server_TcpListener
 
                     if (await UserAuthorizationRequest(tcpClient))
                     {
-                        Console.WriteLine(tcpClient.Client.RemoteEndPoint?.ToString());
-
-                        await Task.Run(async () => await ProcessClientAsync(tcpClient));
+                        Task.Run(async () => await ProcessClientAsync(tcpClient));
                     }
                 }
             }
@@ -98,13 +114,25 @@ namespace Server_TcpListener
 
                     if (str.Contains("END"))
                     {
+                        LogUserInfo logUserInfo = _logs[tcpClient];
+                        logUserInfo._dateDisconnect = DateTime.Now;
+                        _logs[tcpClient] = logUserInfo;
+
+                        SaveUserLog(ref logUserInfo);
+
+                        _logs.Remove(tcpClient);
+
                         stream.Close();
+                        tcpClient.Close();
+
                         break;
                     }
 
                     string message = str + " " + _exchangeRates[str].ToString();
                     byte[] dataBytes = Encoding.UTF8.GetBytes(message);
                     await stream.WriteAsync(dataBytes);
+
+                    _logs[tcpClient]._exchangeRates.Add(message);
                 }
                 catch (IOException ex)
                 {
@@ -143,6 +171,14 @@ namespace Server_TcpListener
                 byte[] dataByte = Encoding.UTF8.GetBytes(msgAuthorization);
                 await stream.WriteAsync(dataByte);
 
+                Console.WriteLine(user.Nickname + ": " + tcpClient.Client.RemoteEndPoint?.ToString());
+
+                LogUserInfo logUserInfo = new LogUserInfo();
+                logUserInfo._nickname = user.Nickname;
+                logUserInfo._dateConnect = DateTime.Now;
+
+                _logs.Add(tcpClient, logUserInfo);
+
                 return true;
             }
             else
@@ -156,6 +192,29 @@ namespace Server_TcpListener
                 tcpClient.Close();
 
                 return false;
+            }
+        }
+        void SaveUserLog(ref LogUserInfo logUserInfo)
+        {
+            string path = @"..\..\..\logUsers.txt";
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(LogUserInfo));
+
+            using (FileStream fs = new FileStream(path, FileMode.Append))
+            {
+                using (StreamWriter sw = new StreamWriter(fs))
+                {
+                    sw.WriteLine("Nickname: {0}", logUserInfo._nickname);
+                    sw.WriteLine("Connect: {0}", logUserInfo._dateConnect);
+                    sw.WriteLine("Disconnect: {0}", logUserInfo._dateDisconnect);
+                    sw.WriteLine("Currency:");
+
+                    foreach (var item in logUserInfo._exchangeRates)
+                    {
+                        sw.WriteLine(item);
+                    }
+
+                    sw.WriteLine();
+                }
             }
         }
     }
