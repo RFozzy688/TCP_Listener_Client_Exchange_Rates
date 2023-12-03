@@ -22,9 +22,6 @@ namespace TCP_Listener_Client_Exchange_Rates
         Commands _getSend;
         Commands _getLogout;
 
-        TcpClient? _tcpClient;
-        NetworkStream? _stream;
-
         public AppVM(MainWindow view) 
         {
             _viewMainWnd = view;
@@ -58,7 +55,17 @@ namespace TCP_Listener_Client_Exchange_Rates
         }
         private async void Send(object param)
         {
-            _viewMainWnd.Result.Text = await _workWithServer.Send(_viewMainWnd.Currency.SelectionBoxItem.ToString());
+            string str = await _workWithServer.Send(_viewMainWnd.Currency.SelectionBoxItem.ToString());
+
+            if (!str.Contains("Max requery count"))
+            {
+                _viewMainWnd.Result.Text = str;
+            }
+            else
+            {
+                MessageBox.Show(str);
+                UserLogout(param);
+            }
         }
         public void AuthorizationUser()
         {

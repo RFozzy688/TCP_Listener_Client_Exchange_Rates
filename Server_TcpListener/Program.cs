@@ -124,6 +124,7 @@ namespace Server_TcpListener
         async Task ProcessClientAsync(TcpClient tcpClient)
         {
             NetworkStream stream = tcpClient.GetStream();
+            int currentRequeryCount = 0;
 
             byte[] received = new byte[256];
 
@@ -158,13 +159,24 @@ namespace Server_TcpListener
                         break;
                     }
 
-                    string message = str + " " + _exchangeRates[str].ToString();
-                    byte[] dataBytes = Encoding.UTF8.GetBytes(message);
-                    await stream.WriteAsync(dataBytes);
-
-                    lock (_lock)
+                    if (currentRequeryCount + 1 <= _requeryMaxCount)
                     {
-                        _logs[tcpClient].ExchangeRates.Add(message);
+                        currentRequeryCount++;
+
+                        string message = str + " " + _exchangeRates[str].ToString();
+                        byte[] dataBytes = Encoding.UTF8.GetBytes(message);
+                        await stream.WriteAsync(dataBytes);
+
+                        lock (_lock)
+                        {
+                            _logs[tcpClient].ExchangeRates.Add(message);
+                        }
+                    }
+                    else
+                    {
+                        string message = "Max requery count";
+                        byte[] dataBytes = Encoding.UTF8.GetBytes(message);
+                        await stream.WriteAsync(dataBytes);
                     }
                 }
                 catch (IOException ex)
