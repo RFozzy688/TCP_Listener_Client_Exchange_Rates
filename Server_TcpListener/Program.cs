@@ -42,6 +42,9 @@ namespace Server_TcpListener
         List<User>? _users;
         Dictionary<TcpClient, LogUserInfo> _logs;
         object _lock = new object();
+        const int _requeryMaxCount = 5;
+        const int _connectionsMaxCount = 2;
+        int _currentConnectionsCount = 0;
 
         public Program()
         {
@@ -84,10 +87,32 @@ namespace Server_TcpListener
                 while (true)
                 {
                     TcpClient tcpClient = await listener.AcceptTcpClientAsync();
+                    NetworkStream stream = tcpClient.GetStream();
 
-                    if (await UserAuthorizationRequest(tcpClient))
+                    string msgError = null;
+                    byte[] dataByte = new byte[256];
+
+                    if (_currentConnectionsCount + 1 <= _connectionsMaxCount)
                     {
-                        Task.Run(async () => await ProcessClientAsync(tcpClient));
+                        _currentConnectionsCount++;
+
+                        msgError = "Good";
+                        dataByte = Encoding.UTF8.GetBytes(msgError);
+                        await stream.WriteAsync(dataByte);
+
+                        if (await UserAuthorizationRequest(tcpClient))
+                        {
+                            Task.Run(async () => await ProcessClientAsync(tcpClient));
+                        }
+                    }
+                    else
+                    {
+                        msgError = "Max count users";
+                        dataByte = Encoding.UTF8.GetBytes(msgError);
+                        await stream.WriteAsync(dataByte);
+
+                        tcpClient.Close();
+                        stream.Close();
                     }
                 }
             }
@@ -114,13 +139,17 @@ namespace Server_TcpListener
 
                     if (str.Contains("END"))
                     {
-                        lock(_lock)
+                        lock (_lock)
                         {
+                            Console.WriteLine(_logs[tcpClient].Nickname + " disconnected: " + tcpClient.Client.RemoteEndPoint?.ToString());
+
                             _logs[tcpClient].DateDisconnect = DateTime.Now;
 
                             SaveUserLog(_logs[tcpClient]);
 
                             _logs.Remove(tcpClient);
+
+                            _currentConnectionsCount--;
                         }
 
                         stream.Close();
@@ -175,7 +204,7 @@ namespace Server_TcpListener
                 byte[] dataByte = Encoding.UTF8.GetBytes(msgAuthorization);
                 await stream.WriteAsync(dataByte);
 
-                Console.WriteLine(user.Nickname + ": " + tcpClient.Client.RemoteEndPoint?.ToString());
+                Console.WriteLine(user.Nickname + " connected: " + tcpClient.Client.RemoteEndPoint?.ToString());
 
                 LogUserInfo logUserInfo = new LogUserInfo();
                 logUserInfo.Nickname = user.Nickname;

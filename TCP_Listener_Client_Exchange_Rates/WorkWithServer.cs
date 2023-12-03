@@ -16,7 +16,7 @@ namespace TCP_Listener_Client_Exchange_Rates
         TcpClient? _tcpClient;
         NetworkStream? _stream;
 
-        public async Task ConnectToServer()
+        private async Task ConnectToServer()
         {
             try
             {
@@ -33,21 +33,29 @@ namespace TCP_Listener_Client_Exchange_Rates
         {
             await ConnectToServer();
 
-            byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(user));
-            await _stream.WriteAsync(data);
-
-            byte[] response = new byte[256];
-
-            int countByte = await _stream.ReadAsync(response);
-
-            string str = Encoding.UTF8.GetString(response, 0, countByte);
-
-            if (str.Contains("Authorization success"))
+            if (await IsMaxCountUsers())
             {
-                return true;
+                byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(user));
+                await _stream.WriteAsync(data);
+
+                byte[] response = new byte[256];
+
+                int countByte = await _stream.ReadAsync(response);
+
+                string str = Encoding.UTF8.GetString(response, 0, countByte);
+
+                if (str.Contains("Authorization success"))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
             else
             {
+                MessageBox.Show("Maximum number of users connected");
                 return false;
             }
         }
@@ -65,6 +73,22 @@ namespace TCP_Listener_Client_Exchange_Rates
         {
             byte[] data = Encoding.UTF8.GetBytes("END");
             await _stream.WriteAsync(data);
+        }
+        private async Task<bool> IsMaxCountUsers()
+        {
+            byte[] response = new byte[256];
+            int countByte = await _stream.ReadAsync(response);
+
+            string str = Encoding.UTF8.GetString(response, 0, countByte);
+
+            if (!str.Contains("Max count users"))
+            {
+                return true;
+            }
+            else 
+            {
+                return false;
+            }
         }
     }
 }
