@@ -22,19 +22,18 @@ namespace Server_TcpListener
             }
         }
     }
-    [Serializable]
-    public struct LogUserInfo
+    public class LogUserInfo
     {
-        public string _nickname;
-        public DateTime _dateConnect;
-        public DateTime _dateDisconnect;
-        public List<string> _exchangeRates;
+        public string Nickname { get; set; }
+        public DateTime DateConnect { get; set;}
+        public DateTime DateDisconnect { get; set;}
+        public List<string> ExchangeRates { get; set; }
         public LogUserInfo()
         {
-            _nickname = string.Empty;
-            _dateConnect = DateTime.MinValue;
-            _dateDisconnect = DateTime.MinValue;
-            _exchangeRates = new List<string>();
+            Nickname = string.Empty;
+            DateConnect = DateTime.MinValue;
+            DateDisconnect = DateTime.MinValue;
+            ExchangeRates = new List<string>();
         }
     }
     internal class Program
@@ -42,6 +41,7 @@ namespace Server_TcpListener
         Dictionary<string, double> _exchangeRates;
         List<User>? _users;
         Dictionary<TcpClient, LogUserInfo> _logs;
+        object _lock = new object();
 
         public Program()
         {
@@ -114,13 +114,14 @@ namespace Server_TcpListener
 
                     if (str.Contains("END"))
                     {
-                        LogUserInfo logUserInfo = _logs[tcpClient];
-                        logUserInfo._dateDisconnect = DateTime.Now;
-                        _logs[tcpClient] = logUserInfo;
+                        lock(_lock)
+                        {
+                            _logs[tcpClient].DateDisconnect = DateTime.Now;
 
-                        SaveUserLog(ref logUserInfo);
+                            SaveUserLog(_logs[tcpClient]);
 
-                        _logs.Remove(tcpClient);
+                            _logs.Remove(tcpClient);
+                        }
 
                         stream.Close();
                         tcpClient.Close();
@@ -132,7 +133,10 @@ namespace Server_TcpListener
                     byte[] dataBytes = Encoding.UTF8.GetBytes(message);
                     await stream.WriteAsync(dataBytes);
 
-                    _logs[tcpClient]._exchangeRates.Add(message);
+                    lock (_lock)
+                    {
+                        _logs[tcpClient].ExchangeRates.Add(message);
+                    }
                 }
                 catch (IOException ex)
                 {
@@ -174,10 +178,13 @@ namespace Server_TcpListener
                 Console.WriteLine(user.Nickname + ": " + tcpClient.Client.RemoteEndPoint?.ToString());
 
                 LogUserInfo logUserInfo = new LogUserInfo();
-                logUserInfo._nickname = user.Nickname;
-                logUserInfo._dateConnect = DateTime.Now;
+                logUserInfo.Nickname = user.Nickname;
+                logUserInfo.DateConnect = DateTime.Now;
 
-                _logs.Add(tcpClient, logUserInfo);
+                lock(_lock)
+                {
+                    _logs.Add(tcpClient, logUserInfo);
+                }
 
                 return true;
             }
@@ -194,27 +201,13 @@ namespace Server_TcpListener
                 return false;
             }
         }
-        void SaveUserLog(ref LogUserInfo logUserInfo)
+        void SaveUserLog(LogUserInfo logUserInfo)
         {
-            string path = @"..\..\..\logUsers.txt";
-            XmlSerializer xmlSerializer = new XmlSerializer(typeof(LogUserInfo));
+            string path = @"..\..\..\logUsers.json";
 
             using (FileStream fs = new FileStream(path, FileMode.Append))
             {
-                using (StreamWriter sw = new StreamWriter(fs))
-                {
-                    sw.WriteLine("Nickname: {0}", logUserInfo._nickname);
-                    sw.WriteLine("Connect: {0}", logUserInfo._dateConnect);
-                    sw.WriteLine("Disconnect: {0}", logUserInfo._dateDisconnect);
-                    sw.WriteLine("Currency:");
-
-                    foreach (var item in logUserInfo._exchangeRates)
-                    {
-                        sw.WriteLine(item);
-                    }
-
-                    sw.WriteLine();
-                }
+                JsonSerializer.Serialize(fs, logUserInfo);
             }
         }
     }
